@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Opening Music Mergers…</title>
+<style>
+  :root { color-scheme: light dark; }
+  body {
+    max-width: 26rem;
+    margin: 0 auto;
+    padding: 5rem 1.5rem;
+    font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: #16202f;
+    background: #fff;
+    text-align: center;
+  }
+  @media (prefers-color-scheme: dark) {
+    body { color: #dfe6f2; background: #0d1420; }
+    .btn { background: #8fb8e8 !important; color: #0d1420 !important; }
+    .muted { color: #8494ac !important; }
+    .note { background: #151e2e !important; border-color: #26314a !important; }
+  }
+  h1 { font-size: 1.35rem; margin: 0 0 .6rem; }
+  .muted { color: #5b6b85; font-size: .95rem; }
+  .btn {
+    display: inline-block;
+    margin-top: 1.6rem;
+    padding: .8rem 1.5rem;
+    border-radius: 9px;
+    background: #1d4ed8;
+    color: #fff;
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .btn:focus-visible { outline: 3px solid #1d4ed8; outline-offset: 3px; }
+  .note {
+    margin-top: 2.5rem;
+    padding: .9rem 1rem;
+    border: 1px solid #d5dde9;
+    border-radius: 8px;
+    background: #f3f6fa;
+    font-size: .86rem;
+    text-align: left;
+    color: #5b6b85;
+  }
+  .spinner {
+    width: 22px; height: 22px; margin: 1.5rem auto 0;
+    border: 2px solid #d5dde9; border-top-color: #1d4ed8;
+    border-radius: 50%; animation: spin .8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }
+</style>
+</head>
+<body>
+
+<h1>Opening Music Mergers…</h1>
+<p class="muted" id="status">Taking you back to the app to finish signing in.</p>
+<div class="spinner" id="spinner" aria-hidden="true"></div>
+
+<a class="btn" id="open" href="musicmergers://auth">Open Music Mergers</a>
+
+<p class="note" id="note">
+  If nothing happens, you are probably reading this on a computer. Open this same
+  link on the phone with Music Mergers installed — the link only works on the
+  device that has the app.
+</p>
+
+<script>
+/*
+  Bridge from an https link to the app's custom scheme.
+
+  Why this page exists: Supabase email links have to point somewhere clickable.
+  Mail clients only turn http and https into links, so a bare `musicmergers://`
+  URL renders as dead text in most desktop clients. This page is a real https
+  URL that mail clients will linkify, and its only job is to hand the parameters
+  straight to the app.
+
+  Why the forwarding is client-side: after verifying the token, Supabase 302s
+  here with the session in the URL *fragment* (#access_token=...). A fragment is
+  never sent to the server by design, so no amount of server config can forward
+  it — only script running in the page can read it.
+
+  That means this page briefly holds live session tokens, so it does exactly one
+  thing with them: hand them to the app. It makes no network requests, loads no
+  third-party script, sets no cookie, writes nothing to storage, and never puts
+  the token in the DOM. `referrer: no-referrer` and `noindex` are set above so
+  the URL cannot leak outward either.
+*/
+(function () {
+  var SCHEME = 'musicmergers://auth';
+
+  // Supabase uses the fragment for implicit flow and the query string for the
+  // PKCE/token_hash flow. Carry whichever is present, unmodified.
+  var search = window.location.search || '';
+  var hash = window.location.hash || '';
+
+  var statusEl = document.getElementById('status');
+  var openEl = document.getElementById('open');
+  var spinner = document.getElementById('spinner');
+  var note = document.getElementById('note');
+
+  // A bare visit with no parameters is someone landing here by accident. Do not
+  // launch the app at them.
+  if (!search && !hash) {
+    document.querySelector('h1').textContent = 'Nothing to open';
+    statusEl.textContent = 'This page finishes a sign-in that starts from an email link.';
+    spinner.style.display = 'none';
+    openEl.style.display = 'none';
+    note.textContent = 'Open the link in the email Music Mergers sent you.';
+    return;
+  }
+
+  var target = SCHEME + search + hash;
+  openEl.setAttribute('href', target);
+
+  // Auto-forward. Browsers increasingly require a user gesture to open a custom
+  // scheme, which is why the button above is not a fallback afterthought — on
+  // some browsers it is the only path that works.
+  try {
+    window.location.replace(target);
+  } catch (e) {
+    // Ignore: the button is already wired to the same destination.
+  }
+
+  // If we are still here after a moment, the automatic hand-off did not take.
+  window.setTimeout(function () {
+    spinner.style.display = 'none';
+    statusEl.textContent = 'Tap the button to finish in the app.';
+  }, 2500);
+})();
+</script>
+
+</body>
+</html>

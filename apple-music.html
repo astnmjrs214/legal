@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Connect Apple Music &middot; Music Mergers</title>
+<!--
+  WHY THIS PAGE IS HERE AND NOT ON SUPABASE.
+
+  This was served by the `apple-music-web` Edge Function. It could never have
+  worked, and the response headers say why:
+
+      content-type: text/plain
+      x-content-type-options: nosniff
+      content-security-policy: default-src 'none'; sandbox
+
+  Supabase's gateway rewrites the Content-Type of every Edge Function response
+  to text/plain and applies a sandbox CSP. That is deliberate on their side —
+  it stops anyone hosting arbitrary web pages on a supabase.co subdomain — and
+  it is absolute. The function was setting `text/html` correctly and the gateway
+  was throwing it away, which is why the page rendered as source no matter what
+  the source said.
+
+  Even with the right Content-Type, `default-src 'none'; sandbox` blocks all
+  script execution, and MusicKit JS is script. So no amount of fixing that
+  function could have produced a working page.
+
+  GitHub Pages serves real HTML and runs scripts, costs nothing, and is already
+  in this project's deploy path via scripts/publish-legal.sh. The developer
+  token still comes from the Supabase function, which returns JSON — the one
+  thing an Edge Function is allowed to return — with CORS open, so this page can
+  call it from another origin.
+-->
+<style>
+  :root { color-scheme: dark; }
+  body {
+    margin: 0; background: #0A111F; color: #F4F1EA;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  .wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
+  .card {
+    width: 100%; max-width: 460px; background: #171C25;
+    border: 1px solid #2A3140; border-radius: 20px; padding: 32px;
+  }
+  h1 { font-size: 1.35rem; margin: 0 0 8px; letter-spacing: -0.01em; }
+  .sub { color: #9AAAC6; font-size: .95rem; line-height: 1.55; margin: 0 0 24px; }
+  button {
+    width: 100%; padding: 16px 24px; border: none; border-radius: 14px;
+    background: #FA243C; color: #fff; font-weight: 700; font-size: 1rem;
+    cursor: pointer; font-family: inherit;
+  }
+  button[disabled] { opacity: .55; cursor: default; }
+  .status { margin: 18px 0 0; font-size: .9rem; color: #9AAAC6; line-height: 1.5; }
+  .status.error { color: #FF7A8F; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Connect Apple Music</h1>
+      <p class="sub">
+        Authorize Apple Music so Music Mergers Marketing Group can read your catalogue
+        and audience figures. You will return to the app automatically.
+      </p>
+      <button id="authorize" disabled>Loading&hellip;</button>
+      <p id="status" class="status">Preparing&hellip;</p>
+    </div>
+  </div>
+
+  <script src="https://js-cdn.music.apple.com/musickit/v1/musickit.js"></script>
+  <script>
+    (function () {
+      var params      = new URLSearchParams(location.search);
+      var redirectUri = params.get('redirect_uri');
+      var state       = params.get('state');
+      var tokenUrl    = params.get('token_url');
+
+      var btn    = document.getElementById('authorize');
+      var statusEl = document.getElementById('status');
+
+      function setStatus(msg, isError) {
+        statusEl.textContent = msg;
+        statusEl.className = isError ? 'status error' : 'status';
+      }
+
+      // Every parameter is required. Arriving without them means this page was
+      // opened from a saved link rather than from Connect inside the app, and
+      // there is no state to complete — say that instead of failing on a fetch.
+      if (!redirectUri || !state || !tokenUrl) {
+        setStatus('Open Apple Music from the Connect button inside the app — a connection has to start there.', true);
+        return;
+      }
+
+      function fetchDeveloperToken() {
+        // The state travels with it: apple-music-auth requires it, because this
+        // page has no Supabase session and the signed state is the only proof
+        // that a real signed-in user started this connection.
+        return fetch(tokenUrl + '?state=' + encodeURIComponent(state)).then(function (res) {
+          if (res.ok) return res.json();
+          // Three causes, three fixes. One message for all of them sent
+          // everybody to the same dead end.
+          if (res.status === 401) throw new Error('This connection link has expired. Close this and tap Connect again.');
+          if (res.status >= 500) throw new Error('Apple Music is not configured on our server yet. This is on us, not your connection.');
+          throw new Error('Could not start Apple Music sign-in (' + res.status + ').');
+        }).then(function (json) {
+          if (json.error) throw new Error(json.error);
+          return json.developerToken;
+        });
+      }
+
+      function returnToApp(userToken) {
+        // The user token goes back as `code`, which is what streaming-oauth's
+        // exchange step reads for every provider.
+        location.href = redirectUri
+          + (redirectUri.indexOf('?') === -1 ? '?' : '&')
+          + 'code=' + encodeURIComponent(userToken)
+          + '&state=' + encodeURIComponent(state);
+      }
+
+      if (!window.MusicKit) {
+        setStatus('Apple Music could not load. Check your connection and reopen this from the app.', true);
+        return;
+      }
+
+      btn.disabled = false;
+      btn.textContent = 'Authorize Apple Music';
+      setStatus('Tap to continue. Apple will ask you to sign in.');
+
+      btn.addEventListener('click', function () {
+        btn.disabled = true;
+        setStatus('Preparing Apple Music authorization…');
+
+        fetchDeveloperToken()
+          .then(function (developerToken) {
+            var music = window.MusicKit.configure({
+              developerToken: developerToken,
+              app: { name: 'Music Mergers', build: '1.0.3' },
+            });
+            setStatus('Authorizing with Apple Music…');
+            return music.authorize();
+          })
+          .then(returnToApp)
+          .catch(function (err) {
+            btn.disabled = false;
+            setStatus(err && err.message ? err.message : String(err), true);
+          });
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -60,7 +60,7 @@ question or request in this policy.</p>
     <tr><td>Subscription status</td><td>Tier, term, renewal and expiry, store transaction identifiers</td><td>To grant the access you paid for</td></tr>
     <tr><td>Approximate or precise location</td><td>Device location at the moment you open Studios Near Me</td><td>Only to list recording studios near you — see section 6</td></tr>
     <tr><td>Diagnostics</td><td>Crash reports, error traces, performance timings, device model and OS version</td><td>To find and fix crashes</td></tr>
-    <tr><td>Connected account data</td><td>Profile and audience statistics from Spotify, YouTube, SoundCloud, or Apple Music, if you link them</td><td>To show your traction without you typing it in — see section 3</td></tr>
+    <tr><td>Connected account data</td><td>Profile and audience statistics from Spotify, SoundCloud or Apple Music if you link them, and public YouTube channel statistics for the artist profile you claim</td><td>To show your traction without you typing it in — see section 3</td></tr>
     <tr><td>Industry analytics about you</td><td>Streaming, audience, and velocity figures from third-party music data providers</td><td>To calculate momentum and benchmarks — see section 4</td></tr>
     <tr><td>Identifiers</td><td>Account ID, push notification token</td><td>To operate the account and deliver notifications you have enabled</td></tr>
   </tbody>
@@ -78,21 +78,19 @@ statistics on that platform, and we use it to populate your Music Mergers profil
 and momentum figures. We do not post anything, we do not read your private
 messages, and we do not access anything beyond what that platform's permission
 screen lists at the moment you approve it.</p>
-<p><strong>YouTube.</strong> If you choose Verify with YouTube, we request the
-read-only <code>youtube.readonly</code> permission and read your channel ID, channel
-title, and public channel statistics (subscribers, views, video count). We use the
-channel ID only to confirm that artist profiles you claim belong to you, and the
-statistics only to show your audience in the app. We never post, upload, or read
-private data, and we do not share YouTube data with anyone.
-Music Mergers Marketing Group's use and transfer of information received from
-Google APIs adheres to the
-<a href="https://developers.google.com/terms/api-services-user-data-policy">Google API Services User Data Policy</a>,
-including the Limited Use requirements. By connecting YouTube you agree to the
+<p><strong>YouTube.</strong> You never sign in to Google for this. When you claim
+your artist profile, we look up the official YouTube channel that Chartmetric or
+Soundcharts lists for it and read that channel's <em>public</em> title and statistics
+(subscribers, views, video count) through YouTube API Services, to show your audience
+in the app and on your EPK. If you choose to verify the channel, we check its public
+description for a short code you add, which proves you run it; you can remove the code
+afterwards. We never post, upload, or read private data, and we do not share YouTube
+data with anyone. By using this feature you agree to the
 <a href="https://www.youtube.com/t/terms">YouTube Terms of Service</a>, and the
 <a href="https://policies.google.com/privacy">Google Privacy Policy</a> applies to
-Google's handling of your data. You can revoke access at any time at
-<a href="https://myaccount.google.com/permissions">myaccount.google.com/permissions</a>;
-stored YouTube data is deleted within 30 days of revocation or account deletion.</p>
+Google's handling of data. Stored YouTube data is refreshed at least every 30 days and
+deleted when you remove the channel in Settings, when it has not been refreshed for 30
+days, or when you delete your account.</p>
 <p>You can disconnect a linked account at any time in the app, which revokes our
 access going forward. Figures already calculated from it remain on your profile
 until you change or delete them.</p>

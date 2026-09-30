@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Finishing YouTube connection…</title>
+<style>
+  :root { color-scheme: light dark; }
+  body {
+    max-width: 26rem;
+    margin: 0 auto;
+    padding: 5rem 1.5rem;
+    font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: #16202f;
+    background: #fff;
+    text-align: center;
+  }
+  @media (prefers-color-scheme: dark) {
+    body { color: #dfe6f2; background: #0d1420; }
+    .btn { background: #8fb8e8 !important; color: #0d1420 !important; }
+    .muted { color: #8494ac !important; }
+    .note { background: #151e2e !important; border-color: #26314a !important; }
+  }
+  h1 { font-size: 1.35rem; margin: 0 0 .6rem; }
+  .muted { color: #5b6b85; font-size: .95rem; }
+  .btn {
+    display: inline-block;
+    margin-top: 1.6rem;
+    padding: .8rem 1.5rem;
+    border-radius: 9px;
+    background: #1d4ed8;
+    color: #fff;
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .btn:focus-visible { outline: 3px solid #1d4ed8; outline-offset: 3px; }
+  .note {
+    margin-top: 2.5rem;
+    padding: .9rem 1rem;
+    border: 1px solid #d5dde9;
+    border-radius: 8px;
+    background: #f3f6fa;
+    font-size: .86rem;
+    text-align: left;
+    color: #5b6b85;
+  }
+  .spinner {
+    width: 22px; height: 22px; margin: 1.5rem auto 0;
+    border: 2px solid #d5dde9; border-top-color: #1d4ed8;
+    border-radius: 50%; animation: spin .8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }
+</style>
+</head>
+<body>
+
+<h1>Finishing your YouTube connection…</h1>
+<p class="muted" id="status">Taking you back to the app.</p>
+<div class="spinner" id="spinner" aria-hidden="true"></div>
+
+<a class="btn" id="open" href="musicmergers://connect/callback">Return to the app</a>
+
+<p class="note" id="note">
+  If the app does not open on its own, tap the button above. This page only
+  works on the phone where you started connecting YouTube.
+</p>
+
+<script>
+/*
+  Google's redirect for "Verify with YouTube", on the company's own domain.
+
+  Google shows the redirect address on its consent screen and on every error
+  page, so this replaces the Supabase function URL that used to appear there.
+  It forwards exactly the four parameters the app reads — nothing else — to
+  the same musicmergers://connect/callback link Spotify and SoundCloud use.
+
+  The `code` it carries is single-use and worthless without the signed
+  `state` and the server's client secret, but the page is still kept inert:
+  no network requests, no third-party script, no storage, nothing written to
+  the DOM, and no referrer.
+*/
+(function () {
+  var KEYS = ['code', 'state', 'error', 'error_description'];
+  var params = new URLSearchParams(window.location.search);
+  var out = new URLSearchParams();
+  KEYS.forEach(function (key) {
+    var value = params.get(key);
+    if (value) out.set(key, value);
+  });
+  out.set('provider', 'youtube');
+
+  var statusEl = document.getElementById('status');
+  var openEl = document.getElementById('open');
+  var spinner = document.getElementById('spinner');
+
+  if (!params.get('code') && !params.get('error')) {
+    document.querySelector('h1').textContent = 'Nothing to finish here';
+    statusEl.textContent = 'Start "Verify with YouTube" from the app\'s settings.';
+    spinner.style.display = 'none';
+    openEl.style.display = 'none';
+    return;
+  }
+
+  var target = 'musicmergers://connect/callback?' + out.toString();
+  openEl.setAttribute('href', target);
+  try { window.location.replace(target); } catch (e) { /* the button goes to the same place */ }
+
+  window.setTimeout(function () {
+    spinner.style.display = 'none';
+    statusEl.textContent = 'Tap the button to finish in the app.';
+  }, 2500);
+})();
+</script>
+
+</body>
+</html>

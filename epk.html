@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>EPK on Music Mergers</title>
+<meta name="description" content="See this artist's EPK on Music Mergers: their music, story and where to catch them live.">
+<meta property="og:title" content="See my EPK on Music Mergers">
+<meta property="og:description" content="Music, story and live dates. Open it in the app.">
+<meta property="og:type" content="profile">
+<meta name="theme-color" content="#0b0f17">
+<!--
+  The page behind a shared EPK link. It shows a teaser card (photo, name,
+  genres, one line) from supabase/functions/epk-card and sends people into the
+  app for the rest: the music, the numbers, contact and shows live there.
+  Only EPKs whose owner switched the shareable link on, and never a minor's.
+-->
+<style>
+  :root {
+    --bg: #0b0f17; --card: #141b27; --line: #243047; --fg: #eef2f8; --muted: #9aa6ba;
+    --accent: #8fc6ec; --on-accent: #0b0f17;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--fg); }
+  body {
+    font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    padding: max(24px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom));
+  }
+  main { width: 100%; max-width: 420px; display: grid; gap: 18px; }
+  .brand { text-align: center; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 24px; overflow: hidden; }
+  .hero { aspect-ratio: 4 / 3; background: #1b2434 center / cover no-repeat; position: relative; }
+  .hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to bottom, transparent 45%, rgba(11,15,23,.92)); }
+  .who { position: absolute; left: 20px; right: 20px; bottom: 16px; z-index: 1; }
+  .role { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); font-weight: 600; }
+  h1 { margin: 4px 0 0; font-size: 32px; line-height: 1.1; text-wrap: balance; }
+  .body { padding: 18px 20px 20px; display: grid; gap: 12px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; font-size: 13px; color: var(--fg); }
+  .pitch { margin: 0; color: var(--fg); }
+  .city { margin: 0; color: var(--muted); font-size: 14px; }
+  .locked { display: grid; gap: 6px; border-top: 1px solid var(--line); padding-top: 14px; color: var(--muted); font-size: 14px; }
+  .locked b { color: var(--fg); font-weight: 600; }
+  .actions { display: grid; gap: 10px; }
+  a.btn { display: block; text-align: center; text-decoration: none; font-weight: 700; border-radius: 14px; padding: 15px 16px; font-size: 16px; }
+  a.primary { background: var(--accent); color: var(--on-accent); }
+  a.secondary { border: 1px solid var(--line); color: var(--fg); }
+  a.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .fine { text-align: center; color: var(--muted); font-size: 12px; margin: 0; }
+  .empty { padding: 28px 22px; text-align: center; display: grid; gap: 8px; }
+  .empty h1 { font-size: 24px; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <div class="brand">Music Mergers</div>
+
+  <section class="card" id="card" hidden aria-live="polite">
+    <div class="hero" id="hero">
+      <div class="who">
+        <div class="role" id="role">Artist</div>
+        <h1 id="name"></h1>
+      </div>
+    </div>
+    <div class="body">
+      <div class="chips" id="genres"></div>
+      <p class="pitch" id="pitch" hidden></p>
+      <p class="city" id="city" hidden></p>
+      <div class="locked">
+        <b>Their music, story and live dates are in the app.</b>
+        <span>Listen, see where they are playing, and connect with them there.</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="card empty" id="private" hidden>
+    <h1>This EPK lives in the app</h1>
+    <p class="city">Open it in Music Mergers to see the full profile.</p>
+  </section>
+
+  <div class="actions">
+    <a class="btn primary" id="open" href="musicmergers://">Open in the app</a>
+    <a class="btn secondary" id="get" href="https://apps.apple.com/us/app/musicmergers/id6805551376">Get the app</a>
+  </div>
+  <p class="fine">Artists, songwriters, producers and A&amp;Rs, all in one place.</p>
+</main>
+<script>
+(function () {
+  var FN = 'https://uttjdlkdkrlsrgiixbqp.supabase.co/functions/v1/epk-card';
+  var params = new URLSearchParams(location.search);
+  var u = (params.get('u') || '').trim();
+  var valid = /^[a-z0-9][a-z0-9-]{1,62}$/i.test(u);
+
+  var ua = navigator.userAgent || '';
+  if (/android/i.test(ua)) {
+    document.getElementById('get').href = 'https://play.google.com/store/apps/details?id=com.musicmergers.app';
+  }
+  if (valid) document.getElementById('open').href = 'musicmergers://' + encodeURIComponent(u);
+
+  function showPrivate() { document.getElementById('private').hidden = false; }
+  if (!valid) { showPrivate(); return; }
+
+  fetch(FN + '?u=' + encodeURIComponent(u))
+    .then(function (r) { return r.ok ? r.json() : { available: false }; })
+    .then(function (d) {
+      if (!d || !d.available) { showPrivate(); return; }
+      document.title = d.name + ' · EPK on Music Mergers';
+      document.getElementById('name').textContent = d.name;
+      document.getElementById('role').textContent = d.role || 'Artist';
+      if (d.image) document.getElementById('hero').style.backgroundImage = 'url("' + String(d.image).replace(/"/g, '%22') + '")';
+      var chips = document.getElementById('genres');
+      (d.genres || []).forEach(function (g) {
+        var s = document.createElement('span'); s.className = 'chip'; s.textContent = g; chips.appendChild(s);
+      });
+      if (d.pitch) { var p = document.getElementById('pitch'); p.textContent = d.pitch; p.hidden = false; }
+      if (d.city) { var c = document.getElementById('city'); c.textContent = d.city; c.hidden = false; }
+      if (d.appPath) document.getElementById('open').href = 'musicmergers://' + encodeURIComponent(d.appPath);
+      document.getElementById('card').hidden = false;
+    })
+    .catch(showPrivate);
+})();
+</script>
+</body>
+</html>
